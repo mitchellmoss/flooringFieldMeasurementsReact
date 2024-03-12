@@ -4,13 +4,7 @@ import {
   Card,
   CardContent,
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
+  Grid,
   Button,
   TextField,
   IconButton,
@@ -22,9 +16,6 @@ import 'jspdf-autotable';
 const useStyles = makeStyles((theme) => ({
   root: {
     padding: theme.spacing(2),
-  },
-  table: {
-    minWidth: 650,
   },
   buttonContainer: {
     marginTop: theme.spacing(2),
@@ -39,7 +30,18 @@ const useStyles = makeStyles((theme) => ({
       margin: theme.spacing(1),
     },
   },
+  dimensionContainer: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    '& > *': {
+      margin: theme.spacing(1),
+      flex: '1 0 auto',
+      minWidth: '80px',
+    },
+  },
 }));
+
 
 const useCurrentDateTime = () => {
   const [currentDateTime, setCurrentDateTime] = useState('');
@@ -131,13 +133,14 @@ const FlooringInstallationNotes = () => {
       setEditIndex(-1);
     }
 
-    setArea('');
-    setSubArea('');
-    setSubSubArea('');
-    setDimensions([{ length: '', width: '' }]);
-    setTotalSqFeet(0);
-    setNotes('');
-  };
+    // Clear form fields
+  setArea('');
+  setSubArea('');
+  setSubSubArea('');
+  setDimensions([{ lengthFeet: '', lengthInches: '', widthFeet: '', widthInches: '' }]);
+  setTotalSqFeet(0);
+  setNotes('');
+};
 
   const handleDelete = (index) => {
     const updatedList = [...flooringList];
@@ -178,6 +181,11 @@ const FlooringInstallationNotes = () => {
   const generatePDF = () => {
     const doc = new jsPDF();
   
+    // Set purple color for the document
+    doc.setTextColor(128, 0, 128);
+    doc.setDrawColor(128, 0, 128);
+    doc.setFillColor(230, 230, 250);
+  
     // Add title
     doc.setFontSize(18);
     doc.text('Flooring Installation Notes', 14, 22);
@@ -201,14 +209,29 @@ const FlooringInstallationNotes = () => {
       item.notes,
     ]);
   
-    doc.autoTable({
+    // Set table styles
+    const tableConfig = {
       startY: 44,
       head: [['Area / Floor', 'Sub Area', 'Sub-Sub Area', 'Dimensions', 'Total SF', 'Notes']],
       body: tableData,
-    });
+      headStyles: {
+        fillColor: [128, 0, 128],
+        textColor: [255, 255, 255],
+      },
+      alternateRowStyles: {
+        fillColor: [230, 230, 250],
+      },
+    };
   
-    // Save the PDF
-    doc.save('flooring_installation_notes.pdf');
+    // Generate the table
+    doc.autoTable(tableConfig);
+
+    // Generate the file name based on the job address
+    const fileName = `flooring_installation_notes_${jobAddress.replace(/\s+/g, '_')}.pdf`;
+
+  
+    // Save the PDF with the generated file name
+    doc.save(fileName);
   };
 
   const addToList = () => {
@@ -256,141 +279,150 @@ const FlooringInstallationNotes = () => {
       <Typography variant="h4" gutterBottom>
         Flooring Installation Notes
       </Typography>
-
+  
       <Card>
         <CardContent>
-          <TableContainer component={Paper}>
-            <Table className={classes.table}>
-              <TableBody>
-                <TableRow>
-                  <TableCell>Job Address / Name</TableCell>
-                  <TableCell>
-                    <TextField
-                      value={jobAddress}
-                      onChange={(e) => {
-                        setJobAddress(e.target.value);
-                        localStorage.setItem('jobAddress', e.target.value);
-                      }}
-                      fullWidth
-                    />
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Date / Time</TableCell>
-                  <TableCell>
-                    <TextField
-                      value={dateTime}
-                      onChange={(e) => {
-                        setDateTime(e.target.value);
-                        localStorage.setItem('dateTime', e.target.value);
-                      }}
-                      fullWidth
-                    />
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Area / Floor</TableCell>
-                  <TableCell>
-                    <TextField
-                      value={area}
-                      onChange={(e) => setArea(e.target.value)}
-                      fullWidth
-                    />
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Sub Area</TableCell>
-                  <TableCell>
-                    <TextField
-                      value={subArea}
-                      onChange={(e) => setSubArea(e.target.value)}
-                      fullWidth
-                    />
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Sub-Sub Area</TableCell>
-                  <TableCell>
-                    <TextField
-                      value={subSubArea}
-                      onChange={(e) => setSubSubArea(e.target.value)}
-                      fullWidth
-                    />
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-      <TableCell>Dimensions (L x W)</TableCell>
-      <TableCell>
-        {dimensions.map((dimension, index) => (
-          <div key={index} className={classes.dimensionContainer}>
-            <TextField
-              label="Length (ft)"
-              value={dimension.lengthFeet}
-              onChange={(e) => handleDimensionChange(index, 'lengthFeet', e.target.value)}
-            />
-            <TextField
-              label="Length (in)"
-              value={dimension.lengthInches}
-              onChange={(e) => handleDimensionChange(index, 'lengthInches', e.target.value)}
-            />
-            
-            <TextField
-              label="Width (ft)"
-              value={dimension.widthFeet}
-              onChange={(e) => handleDimensionChange(index, 'widthFeet', e.target.value)}
-            />
-            <TextField
-              label="Width (in)"
-              value={dimension.widthInches}
-              onChange={(e) => handleDimensionChange(index, 'widthInches', e.target.value)}
-            />
-            <IconButton onClick={() => removeDimension(index)}>
-              <DeleteIcon />
-            </IconButton>
-          </div>
-        ))}
-        <Button variant="outlined" startIcon={<AddIcon />} onClick={addDimension}>
-          Add Dimension
-        </Button>
-      </TableCell>
-    </TableRow>
-                <TableRow>
-                  <TableCell>Total Square Feet (SF)</TableCell>
-                  <TableCell>
-                    <TextField value={totalSqFeet} disabled fullWidth />
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Notes</TableCell>
-                  <TableCell>
-                    <TextField
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      multiline
-                      rows={4}
-                      fullWidth
-                    />
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <div className={classes.buttonContainer}>
-          <Button variant="contained" color="primary" onClick={calculateTotalSF}>
-            Calculate Total SF
-          </Button>
-          <Button variant="contained" color="primary" onClick={addUpdateList}>
-            {editIndex === -1 ? 'Add to List' : 'Update Item'}
-          </Button>
-          <Button variant="contained" color="secondary" onClick={generatePDF}>
-            Generate PDF
-          </Button>
-          <Button variant="contained" onClick={clearStorage}>
-            Clear All Data
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                label="Job Address / Name"
+                value={jobAddress}
+                onChange={(e) => {
+                  setJobAddress(e.target.value);
+                  localStorage.setItem('jobAddress', e.target.value);
+                }}
+                fullWidth
+                margin="dense"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Date / Time"
+                value={dateTime}
+                onChange={(e) => {
+                  setDateTime(e.target.value);
+                  localStorage.setItem('dateTime', e.target.value);
+                }}
+                fullWidth
+                margin="dense"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Area / Floor"
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+                fullWidth
+                margin="dense"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Sub Area"
+                value={subArea}
+                onChange={(e) => setSubArea(e.target.value)}
+                fullWidth
+                margin="dense"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Sub-Sub Area"
+                value={subSubArea}
+                onChange={(e) => setSubSubArea(e.target.value)}
+                fullWidth
+                margin="dense"
+              />
+            </Grid>
+            <Grid item xs={12}>
+  {dimensions.map((dimension, index) => (
+    <div key={index} className={classes.dimensionContainer}>
+      <TextField
+        label="Length (ft)"
+        value={dimension.lengthFeet}
+        onChange={(e) => handleDimensionChange(index, 'lengthFeet', e.target.value)}
+        margin="dense"
+        variant="outlined"
+        size="small"
+      />
+      <TextField
+        label="Length (in)"
+        value={dimension.lengthInches}
+        onChange={(e) => handleDimensionChange(index, 'lengthInches', e.target.value)}
+        margin="dense"
+        variant="outlined"
+        size="small"
+      />
+      <TextField
+        label="Width (ft)"
+        value={dimension.widthFeet}
+        onChange={(e) => handleDimensionChange(index, 'widthFeet', e.target.value)}
+        margin="dense"
+        variant="outlined"
+        size="small"
+      />
+      <TextField
+        label="Width (in)"
+        value={dimension.widthInches}
+        onChange={(e) => handleDimensionChange(index, 'widthInches', e.target.value)}
+        margin="dense"
+        variant="outlined"
+        size="small"
+      />
+      <IconButton onClick={() => removeDimension(index)}>
+        <DeleteIcon />
+      </IconButton>
+    </div>
+  ))}
+  <Button variant="outlined" startIcon={<AddIcon />} onClick={addDimension}>
+    Add Dimension
+  </Button>
+</Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Total Square Feet (SF)"
+                value={totalSqFeet}
+                disabled
+                fullWidth
+                margin="dense"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                multiline
+                rows={4}
+                fullWidth
+                margin="dense"
+              />
+            </Grid>
+          </Grid>
+          <Grid container spacing={2} className={classes.buttonContainer}>
+            <Grid item xs={12}>
+              <Button variant="contained" color="primary" onClick={calculateTotalSF} fullWidth>
+                Calculate Total SF
+              </Button>
+            </Grid>
+            <Grid item xs={12}>
+              <Button variant="contained" color="primary" onClick={addUpdateList} fullWidth>
+                {editIndex === -1 ? 'Add to List' : 'Update Item'}
+              </Button>
+            </Grid>
+            <Grid item xs={12}>
+              <Button variant="contained" color="secondary" onClick={generatePDF} fullWidth>
+                Generate PDF
+              </Button>
+            </Grid>
+            <Grid item xs={12}>
+              <Button variant="contained" onClick={clearStorage} fullWidth>
+                Clear All Data
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       <Typography variant="h5" gutterBottom>
         Flooring Installation List
